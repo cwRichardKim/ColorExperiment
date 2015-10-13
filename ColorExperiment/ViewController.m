@@ -21,6 +21,14 @@
 
 @implementation ViewController
 
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// DISCLAIMER:
+// this is 100% my own code, but I've made similar
+// things in the past, so I used past projects
+// as reference.  This was still written
+// from scratch for this assignment, but I wanted
+// to make sure that was clear.  Thanks!
+
 - (void)viewDidLoad {
   [super viewDidLoad];
 
@@ -127,7 +135,6 @@
   CGFloat viewWidth = self.view.frame.size.width;
 
   CGFloat ratio = (xOffset - viewWidth) / viewWidth;
-  NSLog(@"ratio: %f", ratio);
   NSInteger index = self.currentPageIndex;
   NSInteger viewControllerCount = self.viewControllerCache.count;
 
@@ -145,6 +152,16 @@
     nextRatio = ratio - 1;
     UIColor* nextColor = [self.colorArray objectAtIndex: nextIndex];
     color = [self averageBetweenColor:color andColor:nextColor withRatio:ratio];
+  }
+
+  ContentViewController* vc = [self viewControllerAtIndex:index];
+  ContentViewController* nextVC = [self viewControllerAtIndex:nextIndex];
+
+  [vc transformNodeWithScrollViewRatio:ratio];
+  if (nextIndex > index) {
+    [nextVC transformNodeWithScrollViewRatio:ratio - 1];
+  } else if (nextIndex != index) {
+    [nextVC transformNodeWithScrollViewRatio:1 + ratio];
   }
 
   self.pageViewController.view.backgroundColor = color;
