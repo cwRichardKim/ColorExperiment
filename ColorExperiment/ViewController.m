@@ -14,6 +14,8 @@
 @property (nonatomic) UIPageViewController* pageViewController;
 @property (nonatomic) NSMutableArray* viewControllerCache;
 @property (nonatomic) NSArray* colorArray;
+@property (nonatomic) NSArray* textArray;
+@property (nonatomic) NSArray* imageArray;
 @property (nonatomic) UIScrollView* scrollView;
 @property (nonatomic) NSInteger currentPageIndex;
 
@@ -25,9 +27,10 @@
 // DISCLAIMER:
 // this is 100% my own code, but I've made similar
 // things in the past, so I used past projects
-// as reference.  This was still written
+// as reference.  This was still a new idea written
 // from scratch for this assignment, but I wanted
 // to make sure that was clear.  Thanks!
+//
 
 - (void)viewDidLoad {
   [super viewDidLoad];
@@ -35,7 +38,39 @@
   self.viewControllerCache = [[NSMutableArray alloc] init];
   self.currentPageIndex = 0;
 
-  self.colorArray = @[[UIColor colorWithRed:0.75 green:0.94 blue:0.45 alpha:1], [UIColor colorWithRed:0.03 green:0.79 blue:0.97 alpha:1], [UIColor colorWithRed:0.5 green:0.5 blue:0.5 alpha:1], [UIColor colorWithRed:0.94 green:0.36 blue:0.28 alpha:1], [UIColor colorWithRed:0.21 green:0.25 blue:0.31 alpha:1]];
+  // feel free to change these colors!
+  UIColor* color1 = [UIColor colorWithRed:0.75 green:0.94 blue:0.45 alpha:1];
+  UIColor* color2 = [UIColor colorWithRed:0.03 green:0.79 blue:0.97 alpha:1];
+  UIColor* color3 = [UIColor colorWithRed:0.94 green:0.36 blue:0.28 alpha:1];
+  UIColor* color4 = [UIColor colorWithRed:1 green:0.89 blue:0.23 alpha:1];
+  UIColor* color5 = color1;
+  UIColor* color6 = color2;
+  UIColor* color7 = [UIColor colorWithRed:0.92 green:0.92 blue:0.93 alpha:1];
+
+  self.colorArray = @[color1, color2, color3, color4, color5, color6, color7];
+
+  // Or change these strings! (though be gentle, I haven't spent enough time covering edge cases)
+  NSString* string1 = @"Hey There!\nThis is my submission for the Squarespace internship application.\n\nGo ahead and swipe from right to left!\n\n<----o";
+  NSString* string2 = @"This is an onboarding concept I had a few months ago, where each card would contain a little snippet of information.\n\nThis card is used to demonstrate how I built it to dynamically place the text according to whether or not there is an image.\n\nIt's currently quite simple, and the next step would be to adapt to the size of the image";
+  NSString* string3 = @"While I have your attention, let me tell you a little about me!\n\n\U0001F601";
+  NSString* string4 = @"I'm a developer / designer who prides himself in his work ethic, attention to detail, and ability to build relationships.\n\n(also this is me with my baby brother. We have fun)";
+  NSString* string5 = @"In freshman year I started and ran a company for 17 months.\n\nSince then, my projects have been on all sorts of websites (for all sorts of reasons)";
+  NSString* string6 = @"I've also developed a significant amount of open-sourced code.\n\nIn February of 2015, Github ranked me as the 7th hottest Objective-C developer of the month, in front of Twitter's development team (bit.do/gh7)";
+  NSString* string7 = @"Thanks so much for taking the time to check out what I've put together!\n\nThroughout my career, I've spent over 4,000 hours writing mobile code, and I hope this demonstrates some of my experience.\n\nTo see more of my stuff, feel free to check out bit.ly/RKgithub";
+
+  self.textArray = @[string1, string2, string3, string4, string5, string6, string7];
+
+  UIImage* image1 = [UIImage imageNamed:@"squarespaceLogo"];
+  UIImage* image2 = NULL;
+  UIImage* image3 = [UIImage imageNamed:@"me1"];
+  UIImage* image4 = [UIImage imageNamed:@"me2"];
+  UIImage* image5 = [UIImage imageNamed:@"logos"];
+  UIImage* image6 = [UIImage imageNamed:@"github"];
+  UIImage* image7 = [UIImage imageNamed:@"cheer"];
+
+  self.imageArray = @[image1 ?: [NSNull null], image2?: [NSNull null], image3?: [NSNull null], image4?: [NSNull null], image5?: [NSNull null], image6?: [NSNull null], image7?: [NSNull null]];
+
+  NSAssert(self.colorArray.count <= self.textArray.count && self.colorArray.count <= self.imageArray.count, @"The color array is used to determine the number of cards we create.  This will cause index out of bounds");
 
   [self loadPageViewController];
   [self setScrollViewDelegate];
@@ -65,6 +100,8 @@
   }];
 }
 
+// UIPageViewController doesn't want to expose UIScrollView,
+// So I found a brute-force way of finding it and forcing it out
 - (void)setScrollViewDelegate {
   for (UIView* view in self.pageViewController.view.subviews){
     if([view isKindOfClass:[UIScrollView class]]) {
@@ -104,12 +141,17 @@
   return [self viewControllerAtIndex:index];
 }
 
+// Request for a content page
+// If we've loaded the page before (i.e. it's in the cache), pull from the cache
+// Else load the page and put it in the cache
 - (ContentViewController*)viewControllerAtIndex:(NSUInteger)index {
   if ([self.viewControllerCache count] > index) {
     return [self.viewControllerCache objectAtIndex:index];
   }
 
-  ContentViewController* contentController = [[ContentViewController alloc] init];
+  UIImage* image = self.imageArray[index] != [NSNull null] ? self.imageArray[index] : NULL;
+
+  ContentViewController* contentController = [[ContentViewController alloc] initWithImage:image andText:self.textArray[index]];
   contentController.index = index;
   [contentController setModalPresentationStyle:UIModalPresentationOverCurrentContext];
   [self.viewControllerCache setObject:contentController atIndexedSubscript:index];
@@ -117,6 +159,8 @@
 }
 
 #pragma mark - UIPageViewController Delegate
+
+// These methods are required because UIPageViewController is not meant to expose the UIScrollView, so there's some internal logic that conflicts with my logic.
 
 - (void)updatePageIndex {
   self.currentPageIndex = [self.viewControllerCache indexOfObject: [self.pageViewController.viewControllers lastObject]];
@@ -130,6 +174,10 @@
 
 #pragma mark UIScrollView Delegate
 
+// While we are turning the page, this method calculates a ratio between -1 and 1
+// for how much we've turned the page so far (0 = no turn, -1 = fully swiped left, 1 = right)
+// This number is then passed to the content controller so that it can
+// handle card animations
 - (void)scrollViewDidScroll:(UIScrollView*)scrollView {
   CGFloat xOffset = scrollView.contentOffset.x;
   CGFloat viewWidth = self.view.frame.size.width;
@@ -167,6 +215,8 @@
   self.pageViewController.view.backgroundColor = color;
 }
 
+// This method takes two colors and the ratio from the method above and returns
+// an appropriately mixed color based on how far the user has turned the page
 - (UIColor*)averageBetweenColor:(UIColor*)color1 andColor:(UIColor*)color2 withRatio:(CGFloat)ratio {
   const CGFloat* colorComponents = CGColorGetComponents([color1 CGColor]);
   const CGFloat* nextColorComponents = CGColorGetComponents([color2 CGColor]);
